@@ -1,0 +1,25 @@
+{
+    "name": "aksesmu/laravel-product-crud",
+    "type": "project",
+    "description": "Technical Test Web Development - Aksesmu (PT Sumber Trijaya Lestari) - Laravel 11 CRUD Produk dengan Blade & Tailwind CSS.",
+    "keywords": ["laravel", "framework", "crud", "product", "tailwind"],
+    "license": "MIT",
+    "require": {
+        "php": "^8.2",
+        "laravel/framework": "^11.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/",
+            "Database\\Factories\\": "database/factories/",
+            "Database\\Seeders\\": "database/seeders/"
+        }
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "preferred-install": "dist",
+        "sort-packages": true
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}
