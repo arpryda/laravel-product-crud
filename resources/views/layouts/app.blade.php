@@ -39,12 +39,12 @@
             <div class="flex justify-between h-16">
                 <div class="flex items-center space-x-3">
                     <div class="w-10 h-10 rounded-xl bg-emerald-600 flex items-center justify-center text-white font-bold text-lg shadow-md shadow-emerald-200">
-                        A
+                        P
                     </div>
                     <div>
                         <div class="flex items-center space-x-2">
-                            <span class="font-bold text-slate-900 text-lg tracking-tight">Aksesmu</span>
-                            <span class="text-xs bg-emerald-100 text-emerald-800 font-semibold px-2 py-0.5 rounded-full border border-emerald-200">Product Hub</span>
+                            <span class="font-bold text-slate-900 text-lg tracking-tight">ProductHub</span>
+                            <span class="text-xs bg-emerald-100 text-emerald-800 font-semibold px-2 py-0.5 rounded-full border border-emerald-200">Inventory</span>
                         </div>
                         <p class="text-xs text-slate-500">Technical Test Web Development - Laravel 11</p>
                     </div>
@@ -99,7 +99,7 @@
     <!-- Footer -->
     <footer class="bg-white border-t border-slate-200 py-6 text-center text-xs text-slate-500 mt-auto">
         <div class="max-w-7xl mx-auto px-4">
-            <p>&copy; {{ date('Y') }} PT Sumber Trijaya Lestari (Aksesmu). Dikerjakan untuk Technical Test Posisi Data Mining & Web Development Intern.</p>
+            <p>&copy; {{ date('Y') }} ProductHub System. All rights reserved.</p>
         </div>
     </footer>
 

@@ -1,7 +1,7 @@
 {
     "name": "aksesmu/laravel-product-crud",
     "type": "project",
-    "description": "Technical Test Web Development - Aksesmu (PT Sumber Trijaya Lestari) - Laravel 11 CRUD Produk dengan Blade & Tailwind CSS.",
+    "description": "Technical Test Web Development - Laravel 11 CRUD Produk with Blade & Tailwind CSS.",
     "keywords": ["laravel", "framework", "crud", "product", "tailwind"],
     "license": "MIT",
     "require": {

@@ -1,11 +1,11 @@
 @echo off
-title Push Project Laravel ke GitHub - Aksesmu Assessment
+title Push Project Laravel ke GitHub
 color 0A
 echo ======================================================================
-echo    AKSESMU PRODUCT HUB - PUSH OTOMATIS KE REPOSITORI GITHUB
+echo    PRODUCTHUB LARAVEL - PUSH OTOMATIS KE REPOSITORI GITHUB
 echo ======================================================================
 echo.
-echo Pastikan Anda sudah membuat repositori baru di GitHub (misal: aksesmu-laravel-crud)
+echo Pastikan Anda sudah membuat repositori baru di GitHub (misal: laravel-product-crud)
 echo.
 
 set /p REPO_URL="Masukkan URL Repositori GitHub Anda: "

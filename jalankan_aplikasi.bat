@@ -1,8 +1,8 @@
 @echo off
-title Menjalankan Aplikasi Katalog Produk Aksesmu (Live Test)
+title Menjalankan Aplikasi Katalog Produk (Live Test)
 color 0A
 echo ======================================================================
-echo    MEMULAI SERVER APLIKASI WEB KATALOG PRODUK - AKSESMU
+echo    MEMULAI SERVER APLIKASI WEB KATALOG PRODUK
 echo ======================================================================
 echo.
 echo Membuka aplikasi di browser (http://localhost:8000)...

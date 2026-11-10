@@ -75,7 +75,7 @@ def render_layout(title, content, flash_msg=''):
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{title} - Aksesmu Product Hub</title>
+    <title>{title} - ProductHub Inventory</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>body {{ font-family: 'Plus Jakarta Sans', sans-serif; }}</style>
@@ -85,11 +85,11 @@ def render_layout(title, content, flash_msg=''):
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
                 <div class="flex items-center space-x-3">
-                    <div class="w-10 h-10 rounded-xl bg-emerald-600 flex items-center justify-center text-white font-bold text-lg shadow-md shadow-emerald-200">A</div>
+                    <div class="w-10 h-10 rounded-xl bg-emerald-600 flex items-center justify-center text-white font-bold text-lg shadow-md shadow-emerald-200">P</div>
                     <div>
                         <div class="flex items-center space-x-2">
-                            <span class="font-bold text-slate-900 text-lg tracking-tight">Aksesmu</span>
-                            <span class="text-xs bg-emerald-100 text-emerald-800 font-semibold px-2 py-0.5 rounded-full border border-emerald-200">Live Preview</span>
+                            <span class="font-bold text-slate-900 text-lg tracking-tight">ProductHub</span>
+                            <span class="text-xs bg-emerald-100 text-emerald-800 font-semibold px-2 py-0.5 rounded-full border border-emerald-200">Inventory</span>
                         </div>
                         <p class="text-xs text-slate-500">Technical Test Web Development - Laravel 11 CRUD</p>
                     </div>
@@ -110,7 +110,7 @@ def render_layout(title, content, flash_msg=''):
     </main>
     <footer class="bg-white border-t border-slate-200 py-6 text-center text-xs text-slate-500 mt-auto">
         <div class="max-w-7xl mx-auto px-4">
-            <p>&copy; 2026 PT Sumber Trijaya Lestari (Aksesmu). Mode Live Test Preview Aplikasi Laravel CRUD Produk.</p>
+            <p>&copy; 2026 ProductHub System. All rights reserved.</p>
         </div>
     </footer>
 </body>
@@ -124,14 +124,60 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
         flash = params.get('flash', [''])[0]
 
-        if path in ['/', '/products']:
-            search = params.get('search', [''])[0].strip()
+        if path == '/products/export':
             conn = get_db()
             c = conn.cursor()
+            c.execute('SELECT * FROM products ORDER BY id ASC')
+            products = c.fetchall()
+            conn.close()
+
+            csv_lines = ['\ufeffID,Nama Produk,Deskripsi,Harga,Stok,Status,Dibuat Pada']
+            for p in products:
+                status, _ = get_stock_badge(p['stock'])
+                desc = (p['description'] or '-').replace('"', '""')
+                csv_lines.append(f'{p["id"]},"{p["name"]}","{desc}",{p["price"]},{p["stock"]},"{status}","{p["created_at"]}"')
+            
+            csv_data = '\n'.join(csv_lines).encode('utf-8')
+            self.send_response(200)
+            self.send_header('Content-Type', 'text/csv; charset=UTF-8')
+            self.send_header('Content-Disposition', 'attachment; filename="katalog_produk.csv"')
+            self.send_header('Content-Length', str(len(csv_data)))
+            self.end_headers()
+            self.wfile.write(csv_data)
+            return
+
+        elif path in ['/', '/products']:
+            search = params.get('search', [''])[0].strip()
+            status = params.get('status', ['all'])[0].strip()
+            sort = params.get('sort', ['latest'])[0].strip()
+
+            conn = get_db()
+            c = conn.cursor()
+
+            query_conditions = []
+            query_params = []
+
             if search:
-                c.execute('SELECT * FROM products WHERE name LIKE ? OR description LIKE ? ORDER BY id DESC', (f'%{search}%', f'%{search}%'))
-            else:
-                c.execute('SELECT * FROM products ORDER BY id DESC')
+                query_conditions.append('(name LIKE ? OR description LIKE ?)')
+                query_params.extend([f'%{search}%', f'%{search}%'])
+
+            if status == 'available':
+                query_conditions.append('stock >= 10')
+            elif status == 'low':
+                query_conditions.append('stock >= 1 AND stock < 10')
+            elif status == 'out':
+                query_conditions.append('stock <= 0')
+
+            where_clause = (' WHERE ' + ' AND '.join(query_conditions)) if query_conditions else ''
+
+            order_by = ' ORDER BY id DESC'
+            if sort == 'name_asc': order_by = ' ORDER BY name ASC'
+            elif sort == 'name_desc': order_by = ' ORDER BY name DESC'
+            elif sort == 'price_asc': order_by = ' ORDER BY price ASC'
+            elif sort == 'price_desc': order_by = ' ORDER BY price DESC'
+            elif sort == 'stock_desc': order_by = ' ORDER BY stock DESC'
+
+            c.execute('SELECT * FROM products' + where_clause + order_by, query_params)
             products = c.fetchall()
 
             c.execute('SELECT COUNT(*), SUM(stock), AVG(price) FROM products')
@@ -139,6 +185,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             total_items = stats[0] or 0
             total_stock = stats[1] or 0
             avg_price = stats[2] or 0.0
+
+            c.execute('SELECT COUNT(*) FROM products WHERE stock >= 1 AND stock < 10')
+            low_stock_count = c.fetchone()[0] or 0
+
             conn.close()
 
             rows_html = ''
@@ -174,6 +224,11 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             if not rows_html:
                 rows_html = '''<tr><td colspan="6" class="py-12 text-center text-slate-500">Tidak ada produk ditemukan.</td></tr>'''
 
+            tab_all = 'bg-slate-900 text-white shadow-sm' if status == 'all' else 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+            tab_avail = 'bg-emerald-600 text-white shadow-sm' if status == 'available' else 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+            tab_low = 'bg-amber-600 text-white shadow-sm' if status == 'low' else 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+            tab_out = 'bg-red-600 text-white shadow-sm' if status == 'out' else 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+
             content = f'''
             <div class="space-y-6">
                 <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -181,22 +236,26 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                         <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Katalog Produk</h1>
                         <p class="text-sm text-slate-500 mt-1">Kelola data inventaris, harga, dan ketersediaan stok produk.</p>
                     </div>
-                    <div>
+                    <div class="flex items-center space-x-2">
+                        <a href="/products/export" class="inline-flex items-center space-x-2 px-3.5 py-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold text-sm rounded-xl shadow-sm transition">
+                            <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            <span>Ekspor CSV</span>
+                        </a>
                         <a href="/products/create" class="inline-flex items-center space-x-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm rounded-xl shadow-sm transition">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-                            <span>Tambah Produk Baru</span>
+                            <span>Tambah Produk</span>
                         </a>
                     </div>
                 </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
                     <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center space-x-4">
                         <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
                         </div>
                         <div>
                             <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Item</p>
-                            <p class="text-2xl font-bold text-slate-800">{total_items} <span class="text-xs font-normal text-slate-500">produk</span></p>
+                            <p class="text-2xl font-bold text-slate-800">{total_items} <span class="text-xs font-normal text-slate-500">item</span></p>
                         </div>
                     </div>
                     <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center space-x-4">
@@ -206,6 +265,15 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                         <div>
                             <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Stok</p>
                             <p class="text-2xl font-bold text-slate-800">{total_stock:,} <span class="text-xs font-normal text-slate-500">unit</span></p>
+                        </div>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center space-x-4">
+                        <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                        </div>
+                        <div>
+                            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Stok Menipis</p>
+                            <p class="text-2xl font-bold text-slate-800">{low_stock_count} <span class="text-xs font-normal text-slate-500">item</span></p>
                         </div>
                     </div>
                     <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center space-x-4">
@@ -219,15 +287,35 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                     </div>
                 </div>
 
-                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row gap-3 justify-between items-center">
-                    <form action="/products" method="GET" class="w-full sm:w-96 flex items-center gap-2">
+                <!-- Filter Tabs -->
+                <div class="flex flex-wrap items-center gap-2 border-b border-slate-200 pb-3">
+                    <a href="/products?status=all&search={search}&sort={sort}" class="px-4 py-2 rounded-xl text-xs font-semibold transition {tab_all}">Semua Produk</a>
+                    <a href="/products?status=available&search={search}&sort={sort}" class="px-4 py-2 rounded-xl text-xs font-semibold transition {tab_avail}">Tersedia (&ge; 10)</a>
+                    <a href="/products?status=low&search={search}&sort={sort}" class="px-4 py-2 rounded-xl text-xs font-semibold transition {tab_low}">Stok Menipis (1 - 9)</a>
+                    <a href="/products?status=out&search={search}&sort={sort}" class="px-4 py-2 rounded-xl text-xs font-semibold transition {tab_out}">Habis (0)</a>
+                </div>
+
+                <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row gap-3 justify-between items-center">
+                    <form action="/products" method="GET" class="w-full md:w-auto flex-grow flex items-center gap-2 max-w-lg">
+                        <input type="hidden" name="status" value="{status}">
+                        <input type="hidden" name="sort" value="{sort}">
                         <div class="relative w-full">
-                            <input type="text" name="search" value="{search}" placeholder="Cari nama atau deskripsi..." class="w-full pl-4 pr-4 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                            <input type="text" name="search" value="{search}" placeholder="Cari nama atau deskripsi barang..." class="w-full pl-4 pr-4 py-2 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
                         </div>
                         <button type="submit" class="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white text-sm font-medium rounded-xl">Cari</button>
-                        {f'<a href="/products" class="px-3 py-2 bg-slate-100 text-slate-600 text-sm font-medium rounded-xl">Reset</a>' if search else ''}
+                        {f'<a href="/products?status={status}&sort={sort}" class="px-3 py-2 bg-slate-100 text-slate-600 text-sm font-medium rounded-xl">Reset</a>' if search else ''}
                     </form>
-                    <p class="text-xs text-slate-500">Total: <span class="font-semibold text-slate-700">{len(products)}</span> produk ditampilkan</p>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-xs font-semibold text-slate-500">Urutkan:</span>
+                        <select onchange="location.href='/products?status={status}&search={search}&sort=' + this.value" class="px-3 py-2 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 bg-white">
+                            <option value="latest" {'selected' if sort == 'latest' else ''}>Terbaru (Default)</option>
+                            <option value="name_asc" {'selected' if sort == 'name_asc' else ''}>Nama (A - Z)</option>
+                            <option value="name_desc" {'selected' if sort == 'name_desc' else ''}>Nama (Z - A)</option>
+                            <option value="price_asc" {'selected' if sort == 'price_asc' else ''}>Harga: Terendah &rarr; Tertinggi</option>
+                            <option value="price_desc" {'selected' if sort == 'price_desc' else ''}>Harga: Tertinggi &rarr; Terendah</option>
+                            <option value="stock_desc" {'selected' if sort == 'stock_desc' else ''}>Stok: Terbanyak</option>
+                        </select>
+                    </div>
                 </div>
 
                 <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
@@ -237,7 +325,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                                 <tr class="bg-slate-50/75 border-b border-slate-200 text-xs font-semibold uppercase text-slate-500 tracking-wider">
                                     <th class="py-3.5 px-4 text-center w-14">No</th>
                                     <th class="py-3.5 px-4">Nama Produk & Deskripsi</th>
-                                    <th class="py-3.5 px-4 text-right">Harga</th>
+                                    <th class="py-3.5 px-4 text-right">Harga Satuan</th>
                                     <th class="py-3.5 px-4 text-center">Stok</th>
                                     <th class="py-3.5 px-4 text-center">Status</th>
                                     <th class="py-3.5 px-4 text-center w-28">Aksi</th>
@@ -282,7 +370,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.send_response(200)
             self.send_header('Content-type', 'text/html; charset=utf-8')
             self.end_headers()
-            self.wfile.write(render_layout('Daftar Produk', content, flash).encode('utf-8'))
+            self.wfile.write(render_layout('Katalog Produk', content, flash).encode('utf-8'))
 
         elif path == '/products/create':
             content = '''

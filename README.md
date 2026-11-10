@@ -1,6 +1,6 @@
-# Aksesmu Product Hub - Technical Test Web Development (Laravel 11)
+# ProductHub - Technical Test Web Development (Laravel 11)
 
-Aplikasi manajemen katalog produk berbasis **Laravel 11** dan **Tailwind CSS** yang dibangun untuk memenuhi kriteria **Technical Test Web Development - PT Sumber Trijaya Lestari (Aksesmu)**.
+Aplikasi manajemen katalog produk berbasis **Laravel 11** dan **Tailwind CSS** yang dibangun untuk memenuhi kriteria **Technical Test Web Development**.
 
 ---
 
@@ -150,4 +150,4 @@ Buka browser dan akses aplikasi melalui: `http://localhost:8000`
 ```
 
 ---
-Dibuat untuk keperluan evaluasi **Technical Test Web Development & Data Mining** di **PT Sumber Trijaya Lestari (Aksesmu)**.
+Dibuat untuk keperluan evaluasi **Technical Test Web Development (Laravel 11 & Tailwind CSS)**.
