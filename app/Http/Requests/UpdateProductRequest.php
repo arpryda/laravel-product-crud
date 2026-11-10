@@ -14,26 +14,10 @@ class UpdateProductRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => [
-                'required',
-                'string',
-                'max:100',
-            ],
-            'description' => [
-                'nullable',
-                'string',
-            ],
-            'price' => [
-                'required',
-                'numeric',
-                'min:0',
-                'max:99999999.99',
-            ],
-            'stock' => [
-                'required',
-                'integer',
-                'min:0',
-            ],
+            'name' => ['required', 'string', 'max:100'],
+            'description' => ['nullable', 'string'],
+            'price' => ['required', 'numeric', 'min:0'],
+            'stock' => ['required', 'integer', 'min:0'],
         ];
     }
 
@@ -41,13 +25,13 @@ class UpdateProductRequest extends FormRequest
     {
         return [
             'name.required' => 'Nama produk wajib diisi.',
-            'name.max' => 'Nama produk tidak boleh melebihi 100 karakter.',
+            'name.max' => 'Nama produk maksimal 100 karakter.',
             'price.required' => 'Harga produk wajib diisi.',
-            'price.numeric' => 'Harga produk harus berupa angka nominal.',
-            'price.min' => 'Harga produk tidak boleh bernilai negatif.',
+            'price.numeric' => 'Harga harus berupa angka.',
+            'price.min' => 'Harga tidak boleh kurang dari 0.',
             'stock.required' => 'Stok produk wajib diisi.',
-            'stock.integer' => 'Stok produk harus berupa bilangan bulat.',
-            'stock.min' => 'Stok produk tidak boleh kurang dari 0.',
+            'stock.integer' => 'Stok harus berupa bilangan bulat.',
+            'stock.min' => 'Stok tidak boleh kurang dari 0.',
         ];
     }
 }

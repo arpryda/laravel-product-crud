@@ -12,10 +12,6 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ProductController extends Controller
 {
-    /**
-     * Menampilkan daftar semua produk dalam bentuk tabel.
-     * Fitur Upgrade: Pencarian real-time, filter status stok, dan pengurutan dinamis.
-     */
     public function index(Request $request): View
     {
         $search = $request->input('search');
@@ -24,7 +20,6 @@ class ProductController extends Controller
 
         $query = Product::query();
 
-        // 1. Fitur Pencarian Kata Kunci
         if ($search) {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
@@ -32,7 +27,6 @@ class ProductController extends Controller
             });
         }
 
-        // 2. Fitur Filter Status Persediaan Stok (Upgrade)
         if ($status === 'available') {
             $query->where('stock', '>=', 10);
         } elseif ($status === 'low') {
@@ -41,7 +35,6 @@ class ProductController extends Controller
             $query->where('stock', '<=', 0);
         }
 
-        // 3. Fitur Pengurutan Data / Sorting (Upgrade)
         switch ($sort) {
             case 'name_asc':
                 $query->orderBy('name', 'asc');
@@ -65,7 +58,6 @@ class ProductController extends Controller
 
         $products = $query->paginate(10)->withQueryString();
 
-        // Statistik Cepat untuk Dashboard Cards
         $totalItems = Product::count();
         $totalStock = Product::sum('stock');
         $avgPrice = Product::avg('price') ?? 0;
@@ -85,57 +77,39 @@ class ProductController extends Controller
         ));
     }
 
-    /**
-     * Menampilkan form untuk menambahkan produk baru.
-     */
     public function create(): View
     {
         return view('products.create');
     }
 
-    /**
-     * Menyimpan produk baru ke dalam database setelah divalidasi.
-     */
     public function store(StoreProductRequest $request): RedirectResponse
     {
         $product = Product::create($request->validated());
 
         return redirect()
             ->route('products.index')
-            ->with('success', 'Produk "' . $product->name . '" berhasil ditambahkan ke katalog!');
+            ->with('success', 'Produk "' . $product->name . '" berhasil ditambahkan.');
     }
 
-    /**
-     * Menampilkan detail spesifik dari suatu produk.
-     */
     public function show(Product $product): View
     {
         return view('products.show', compact('product'));
     }
 
-    /**
-     * Menampilkan form untuk mengedit produk yang sudah ada.
-     */
     public function edit(Product $product): View
     {
         return view('products.edit', compact('product'));
     }
 
-    /**
-     * Memperbarui data produk di database setelah divalidasi.
-     */
     public function update(UpdateProductRequest $request, Product $product): RedirectResponse
     {
         $product->update($request->validated());
 
         return redirect()
             ->route('products.index')
-            ->with('success', 'Data produk "' . $product->name . '" berhasil diperbarui!');
+            ->with('success', 'Data produk "' . $product->name . '" berhasil diperbarui.');
     }
 
-    /**
-     * Menghapus produk dari database.
-     */
     public function destroy(Product $product): RedirectResponse
     {
         $productName = $product->name;
@@ -143,16 +117,12 @@ class ProductController extends Controller
 
         return redirect()
             ->route('products.index')
-            ->with('success', 'Produk "' . $productName . '" berhasil dihapus dari sistem!');
+            ->with('success', 'Produk "' . $productName . '" berhasil dihapus.');
     }
 
-    /**
-     * Fitur Upgrade: Ekspor data seluruh produk ke format CSV.
-     * Sangat berguna untuk integrasi analisis Data Mining.
-     */
     public function export(): StreamedResponse
     {
-        $fileName = 'katalog_produk_' . date('Y-m-d_His') . '.csv';
+        $fileName = 'products_' . date('Ymd_His') . '.csv';
         $products = Product::orderBy('id', 'asc')->get();
 
         $headers = [
@@ -162,11 +132,9 @@ class ProductController extends Controller
 
         $callback = function () use ($products) {
             $handle = fopen('php://output', 'w');
-            // Menulis UTF-8 BOM agar terbaca sempurna di Microsoft Excel
             fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
             
-            // Header CSV
-            fputcsv($handle, ['ID', 'Nama Produk', 'Deskripsi', 'Harga (Rp)', 'Stok', 'Status Stok', 'Dibuat Pada']);
+            fputcsv($handle, ['ID', 'Nama', 'Deskripsi', 'Harga', 'Stok', 'Status', 'Dibuat']);
 
             foreach ($products as $p) {
                 fputcsv($handle, [
@@ -176,7 +144,7 @@ class ProductController extends Controller
                     $p->price,
                     $p->stock,
                     $p->stock_status['label'],
-                    $p->created_at?->format('Y-m-d H:i:s') ?? '-',
+                    $p->created_at?->format('Y-m-d H:i') ?? '-',
                 ]);
             }
             fclose($handle);

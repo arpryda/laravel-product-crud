@@ -1,7 +1,3 @@
-*.sqlite
-*.sqlite3
-preview_server.py
-jalankan_aplikasi.bat
 /node_modules
 /public/build
 /public/hot
@@ -22,3 +18,8 @@ yarn-error.log
 /.vscode
 .DS_Store
 Thumbs.db
+*.sqlite
+*.sqlite3
+preview_server.py
+jalankan_aplikasi.bat
+push_ke_github.bat
